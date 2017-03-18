@@ -71,8 +71,7 @@ class _ChampionItemState extends State<_ChampionItem> {
       child: new Stack(
         children: [
           new Image.network(
-            "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champion
-                .id}_0.jpg",
+            loadingImage(champion.id),
             fit: BoxFit.fitWidth,
             scale: 1.8,
             alignment: new FractionalOffset(0.0, 0.16),
@@ -103,26 +102,18 @@ class _ChampionListPageState extends State<ChampionListPage> {
     fetchChampionData((ChampionData data) {
       setState(() {
         champions.clear();
-        Map tempChamps = data.data['data'];
-        tempChamps.forEach((String championName, Map championData) {
-          var champion = new Champion(championData);
-          print("Adding ${champion.toString()}");
-          champions.add(champion);
-        });
+        champions.addAll(data.champions);
       });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    var children = new List();
-    champions.map((Champion champion) =>
+    var children = champions.map((Champion champion) =>
     new _ChampionItem(
       key: new Key(champion.id),
       champion: champion,
-    ));
-
-    children.addAll(champions);
+    )).toList();
 
     var championList = new GridView(
       gridDelegate: new SliverGridDelegateWithFixedCrossAxisCount(

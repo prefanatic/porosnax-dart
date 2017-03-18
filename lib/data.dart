@@ -4,9 +4,11 @@ import 'dart:io';
 class Champion {
   Champion(Map data)
       : id = data["id"],
-        name = data["name"];
+        name = data["name"],
+        title = data["title"],
+        blurb = data["blurb"];
 
-  final String id, name;
+  final String id, name, title, blurb;
 
   @override
   String toString() =>
@@ -14,11 +16,19 @@ class Champion {
 }
 
 class ChampionData {
-  Map data;
+  ChampionData(this.data) {
+    Map d = data['data'];
 
-  ChampionData(Map data) {
-    this.data = data;
+    d.forEach((String championName, Map championData) {
+      var champion = new Champion(championData);
+      print("Adding ${champion.toString()}");
+
+      champions.add(champion);
+    });
   }
+
+  final Map data;
+  List<Champion> champions = new List();
 
 }
 
@@ -44,3 +54,6 @@ fetchChampionData(ChampionDataCallback callback) async {
 
   callback(new ChampionData(jsonData));
 }
+
+loadingImage(String key) =>
+    "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${key}_0.jpg";
