@@ -1,13 +1,50 @@
 import 'package:flutter/material.dart';
 
 import 'data.dart';
+import 'champion.dart';
 
 void main() {
-  runApp(new MyApp());
+  runApp(new PoroSnax());
 }
 
-class MyApp extends StatelessWidget {
+class PoroSnaxState extends State<PoroSnax> {
   // This widget is the root of your application.
+  final _champions = new Map<String, Champion>();
+
+  Route<Null> _getRoute(RouteSettings settings) {
+    final List<String> path = settings.name.split('/');
+    if (path[0] != '')
+      return null;
+    if (path[1] == 'champion') {
+      if (path.length != 3)
+        return null;
+      if (_champions.containsKey(path[2])) {
+        return new MaterialPageRoute<Null>(
+            settings: settings,
+            builder: (BuildContext context) =>
+            new ChampionPage(champion: _champions[path[2]])
+        );
+      }
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    fetchChampionData((ChampionData data) {
+      setState(() {
+        _champions.clear();
+
+        data.champions.forEach((Champion champion) {
+          _champions[champion.id] = champion;
+        });
+      });
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
@@ -24,27 +61,15 @@ class MyApp extends StatelessWidget {
       // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: new ChampionListPage(title: 'Champions'),
+      home: new ChampionListPage(title: 'Champions', champions: _champions),
+      onGenerateRoute: _getRoute,
     );
   }
 }
 
-class ChampionListPage extends StatefulWidget {
-  ChampionListPage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful,
-  // meaning that it has a State object (defined below) that contains
-  // fields that affect how it looks.
-
-  // This class is the configuration for the state. It holds the
-  // values (in this case the title) provided by the parent (in this
-  // case the App widget) and used by the build method of the State.
-  // Fields in a Widget subclass are always marked "final".
-
-  final String title;
-
+class PoroSnax extends StatefulWidget {
   @override
-  _ChampionListPageState createState() => new _ChampionListPageState();
+  State createState() => new PoroSnaxState();
 }
 
 class _ChampionItem extends StatefulWidget {
@@ -67,53 +92,65 @@ class _ChampionItemState extends State<_ChampionItem> {
 
   @override
   Widget build(BuildContext context) {
-    return new Card(
-      child: new Stack(
-        children: [
-          new Image.network(
-            loadingImage(champion.id),
-            fit: BoxFit.fitWidth,
-            scale: 1.8,
-            alignment: new FractionalOffset(0.0, 0.16),
-          ),
-          new Align(
-            alignment: FractionalOffset.bottomLeft,
-            child: new Padding(
-              padding: new EdgeInsets.all(16.0),
-              child: new Text(
+    return new GestureDetector(
+        onTap: () {
+          Navigator.pushNamed(context, "/champion/${champion.id}");
+        },
+        child: new Tooltip(
+          message: champion.name,
+          child: new GridTile(
+            child: new Image.network(
+              loadingImage(champion.id),
+              fit: BoxFit.fitWidth,
+              scale: 1.8,
+              alignment: new FractionalOffset(0.0, 0.16),
+            ),
+            footer: new GridTileBar(
+              backgroundColor: Colors.black45,
+              title: new Text(
                 champion.name,
                 style: new TextStyle(color: Colors.white),
               ),
             ),
           ),
-        ],
-      ),
+        )
     );
   }
 }
 
-class _ChampionListPageState extends State<ChampionListPage> {
-  var champions = new List<Champion>();
+class ChampionListPage extends StatefulWidget {
+  ChampionListPage({Key key, this.title, this.champions}) : super(key: key);
+
+  // This widget is the home page of your application. It is stateful,
+  // meaning that it has a State object (defined below) that contains
+  // fields that affect how it looks.
+
+  // This class is the configuration for the state. It holds the
+  // values (in this case the title) provided by the parent (in this
+  // case the App widget) and used by the build method of the State.
+  // Fields in a Widget subclass are always marked "final".
+
+  final String title;
+  final Map<String, Champion> champions;
 
   @override
-  void initState() {
-    super.initState();
+  _ChampionListPageState createState() => new _ChampionListPageState();
+}
 
-    fetchChampionData((ChampionData data) {
-      setState(() {
-        champions.clear();
-        champions.addAll(data.champions);
-      });
-    });
-  }
-
+class _ChampionListPageState extends State<ChampionListPage> {
   @override
   Widget build(BuildContext context) {
-    var children = champions.map((Champion champion) =>
-    new _ChampionItem(
-      key: new Key(champion.id),
-      champion: champion,
-    )).toList();
+    var children = new List<_ChampionItem>();
+
+    if (config.champions != null) {
+      config.champions.forEach((String id, Champion champion) {
+        var item = new _ChampionItem(
+          key: new Key(champion.id),
+          champion: champion,
+        );
+        children.add(item);
+      });
+    }
 
     var championList = new GridView(
       gridDelegate: new SliverGridDelegateWithFixedCrossAxisCount(
